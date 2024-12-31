@@ -6,9 +6,8 @@ import { validateAmount } from './validators.js';
  * @throws {Error} If amount validation fails
  */
 export function buildPaymentData(params, config) {
-    // Use finalAmount as amount in the request
     const {
-        finalAmount: amount, // Rename finalAmount to amount
+        amount, // We now expect amount directly
         steamLogin,
         currency = 'RUB',
         orderId = `ORDER${Date.now()}`,

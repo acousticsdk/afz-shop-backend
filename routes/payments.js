@@ -7,17 +7,15 @@ const antilopayService = new AntilopayService();
 
 router.post('/create', async (req, res) => {
     try {
-        const { steamLogin, amount, finalAmount } = req.body;
+        const { steamLogin, finalAmount } = req.body;
         
         logger.info('Payment request received:', {
             steamLogin,
-            amount,
-            finalAmount
+            amount: finalAmount // Log the amount we'll actually use
         });
 
-        // Pass finalAmount as the payment amount
         const paymentUrl = await antilopayService.createPayment({
-            finalAmount,
+            amount: finalAmount, // Use finalAmount as the payment amount
             steamLogin,
             successUrl: `${process.env.FRONTEND_URL}/success`,
             failUrl: `${process.env.FRONTEND_URL}/fail`,
