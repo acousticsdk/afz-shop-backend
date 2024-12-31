@@ -1,5 +1,6 @@
 import express from 'express';
 import { AntilopayService } from '../services/antilopayService.js';
+import logger from '../config/logger.js';
 
 const router = express.Router();
 const antilopayService = new AntilopayService();
@@ -8,8 +9,13 @@ router.post('/create', async (req, res) => {
     try {
         const { steamLogin, amount, finalAmount } = req.body;
         
+        logger.info('Creating payment:', {
+            steamLogin,
+            amount,
+            finalAmount
+        });
+
         const paymentData = {
-            merchant: process.env.ANTILOPAY_MERCHANT_ID,
             amount: finalAmount.toFixed(2),
             currency: 'RUB',
             orderId: Date.now().toString(),
@@ -33,9 +39,16 @@ router.post('/create', async (req, res) => {
         };
 
         const paymentUrl = await antilopayService.createPayment(paymentData);
+        
+        logger.info('Payment created:', { paymentUrl });
+        
         res.json({ paymentUrl });
     } catch (error) {
-        console.error('Payment creation error:', error);
+        logger.error('Payment creation error:', {
+            error: error.message,
+            stack: error.stack
+        });
+        
         res.status(500).json({ 
             error: 'Failed to create payment',
             message: error.message 
