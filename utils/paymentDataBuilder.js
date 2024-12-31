@@ -1,7 +1,10 @@
 import logger from '../config/logger.js';
 import { validateAmount } from './validators.js';
-import { validateCustomer } from './customerValidator.js';
 
+/**
+ * Builds payment request data with all required fields
+ * @throws {Error} If amount validation fails
+ */
 export function buildPaymentData(params, config) {
     const {
         amount,
@@ -10,7 +13,8 @@ export function buildPaymentData(params, config) {
         orderId = `ORDER${Date.now()}`,
         successUrl,
         failUrl,
-        customer
+        customer,
+        receipt
     } = params;
 
     // Validate amount
@@ -19,35 +23,32 @@ export function buildPaymentData(params, config) {
         throw new Error(amountValidation.error);
     }
 
-    // Validate and format customer data
-    const validatedCustomer = validateCustomer({
-        email: customer?.email || 'test@example.com',
-        phone: customer?.phone || '79001234567',
-        name: `Steam User ${steamLogin}`
-    });
-
     const requestData = {
-        merchant: config.merchantId,
+        // Required fields
         project_identificator: config.projectId,
-        amount: amountValidation.value,
+        amount: amountValidation.value, // Now a number
         order_id: orderId,
         currency,
+        product_name: 'Пополнение Steam',
+        product_type: 'services',
+
+        // Optional fields
         description: `Пополнение Steam для ${steamLogin}`,
         success_url: successUrl,
         fail_url: failUrl,
-        customer: validatedCustomer,
-        receipt: {
-            customer: validatedCustomer,
+        customer,
+        receipt: receipt || {
             items: [{
                 name: 'Пополнение баланса Steam',
                 quantity: 1,
                 price: amountValidation.value,
                 sum: amountValidation.value,
                 payment_method: 'full_prepayment',
-                payment_object: 'service',
-                vat: 'none'
+                payment_object: 'service'
             }]
         },
+
+        // Add secret key for signature generation
         secretKey: config.secretKey
     };
 
