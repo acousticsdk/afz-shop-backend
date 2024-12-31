@@ -4,32 +4,25 @@ import { generateAntilopaySignature } from '../utils/antilopaySignature.js';
 export class AntilopayService {
     constructor() {
         this.merchantId = process.env.ANTILOPAY_MERCHANT_ID;
-        this.secretKey = process.env.ANTILOPAY_SECRET_KEY;
+        this.secretId = process.env.ANTILOPAY_SECRET_ID;
         this.projectId = process.env.ANTILOPAY_PROJECT_ID;
+        this.secretKey = process.env.ANTILOPAY_SECRET_KEY;
         this.baseUrl = 'https://lk.antilopay.com/api/v1';
         this.gateUrl = 'https://gate.antilopay.com/#payment';
     }
 
     async createPayment(paymentData) {
         try {
-            const fullPaymentData = {
-                ...paymentData,
-                merchant: this.merchantId,
+            const requestData = {
                 project_identificator: this.projectId,
+                amount: paymentData.amount,
+                currency: paymentData.currency || 'RUB',
+                order_id: paymentData.orderId,
+                description: paymentData.description,
                 secretKey: this.secretKey
             };
 
-            // Generate signature
-            const signature = await generateAntilopaySignature(fullPaymentData);
-            
-            // Remove secret key before sending
-            delete fullPaymentData.secretKey;
-
-            logger.info('Creating payment request:', {
-                url: `${this.baseUrl}/payment/create`,
-                data: fullPaymentData,
-                timestamp: new Date().toISOString()
-            });
+            const signature = generateAntilopaySignature(requestData);
 
             const response = await fetch(`${this.baseUrl}/payment/create`, {
                 method: 'POST',
@@ -38,37 +31,20 @@ export class AntilopayService {
                     'Accept': 'application/json',
                     'X-Apay-Sign': signature,
                     'X-Apay-Sign-Version': '1',
-                    'X-Apay-Secret-Id': this.secretKey
+                    'X-Apay-Secret-Id': this.secretId
                 },
-                body: JSON.stringify(fullPaymentData)
+                body: JSON.stringify(requestData)
             });
 
             const responseData = await response.json();
-            logger.info('Antilopay response:', {
-                status: response.status,
-                data: responseData,
-                timestamp: new Date().toISOString()
-            });
-
+            
             if (!response.ok || responseData.code !== 0) {
-                throw new Error(responseData.error || responseData.message || 'Payment creation failed');
+                throw new Error(responseData.error || 'Payment creation failed');
             }
 
-            if (!responseData.payment_id) {
-                logger.error('Invalid Antilopay response:', responseData);
-                throw new Error('Payment ID not received from Antilopay');
-            }
-
-            const paymentUrl = `${this.gateUrl}/${responseData.payment_id}`;
-            logger.info('Payment URL generated:', paymentUrl);
-
-            return paymentUrl;
+            return `${this.gateUrl}/${responseData.payment_id}`;
         } catch (error) {
-            logger.error('Antilopay API error:', {
-                message: error.message,
-                stack: error.stack,
-                timestamp: new Date().toISOString()
-            });
+            logger.error('Payment creation error:', error);
             throw error;
         }
     }
