@@ -17,10 +17,30 @@ export class AntilopayService {
     async createPayment(params) {
         try {
             const requestData = buildPaymentData(params, this.config);
+            
+            // Log the complete request data before signature
+            logger.info('Complete payment request data:', {
+                ...requestData,
+                secretKey: '[REDACTED]'
+            });
+
             const signature = generateAntilopaySignature(requestData);
             
             // Remove secret key before sending
             delete requestData.secretKey;
+
+            // Log the final request that will be sent
+            logger.info('Final request data being sent:', {
+                url: `${this.config.baseUrl}/payment/create`,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Apay-Sign': signature,
+                    'X-Apay-Sign-Version': '1',
+                    'X-Apay-Secret-Id': '[REDACTED]'
+                },
+                body: requestData
+            });
 
             const response = await fetch(`${this.config.baseUrl}/payment/create`, {
                 method: 'POST',
