@@ -13,21 +13,23 @@ export class AntilopayService {
 
     async createPayment(paymentData) {
         try {
-            // Prepare minimal request data according to API specification
+            // Prepare request data with correct parameter formats
             const requestData = {
                 merchant: this.merchantId,
                 project_identificator: this.projectId,
                 amount: Number(paymentData.amount).toFixed(2),
-                currency: 'RUB',
-                order_id: paymentData.orderId,
-                description: paymentData.description,
+                currency: 'RUB', // Uppercase currency code
+                order_id: `ORDER${Date.now()}`, // Prefix order ID for uniqueness
+                description: paymentData.description || 'Пополнение баланса Steam',
                 secretKey: this.secretKey
             };
 
-            // Generate signature
-            const signature = generateAntilopaySignature(requestData);
+            logger.info('Creating payment with data:', {
+                ...requestData,
+                secretKey: '[REDACTED]'
+            });
 
-            // Remove secretKey before sending
+            const signature = generateAntilopaySignature(requestData);
             delete requestData.secretKey;
 
             const response = await fetch(`${this.baseUrl}/payment/create`, {
@@ -43,6 +45,7 @@ export class AntilopayService {
             });
 
             const responseData = await response.json();
+            logger.info('Payment API response:', responseData);
 
             if (!response.ok || responseData.code !== 0) {
                 throw new Error(responseData.error || 'Payment creation failed');
