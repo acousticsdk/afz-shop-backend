@@ -52,7 +52,8 @@ export class AntilopayService {
             const response = await fetch(`${this.baseUrl}/payment/create`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-Apay-Secret-Id': this.secretKey // Add required header
                 },
                 body: JSON.stringify(fullPaymentData)
             });
@@ -61,7 +62,7 @@ export class AntilopayService {
             logger.info('Antilopay response:', responseData);
 
             if (!response.ok) {
-                throw new Error(responseData.message || 'Payment creation failed');
+                throw new Error(responseData.error || responseData.message || 'Payment creation failed');
             }
 
             const { payment_id } = responseData;
