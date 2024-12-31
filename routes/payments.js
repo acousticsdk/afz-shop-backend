@@ -18,12 +18,8 @@ router.post('/create', async (req, res) => {
             amount: finalAmount,
             steamLogin,
             successUrl: `${process.env.FRONTEND_URL}/success`,
-            failUrl: `${process.env.FRONTEND_URL}/fail`,
-            customer: {
-                email: 'test@example.com',
-                phone: '79001234567',
-                name: `Steam User ${steamLogin}`
-            }
+            failUrl: `${process.env.FRONTEND_URL}/fail`
+            // Removed customer data
         });
         
         logger.info('Payment URL created:', { paymentUrl });

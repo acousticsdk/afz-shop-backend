@@ -12,9 +12,7 @@ export function buildPaymentData(params, config) {
         currency = 'RUB',
         orderId = `ORDER${Date.now()}`,
         successUrl,
-        failUrl,
-        customer,
-        receipt
+        failUrl
     } = params;
 
     // Validate amount
@@ -26,7 +24,7 @@ export function buildPaymentData(params, config) {
     const requestData = {
         // Required fields
         project_identificator: config.projectId,
-        amount: amountValidation.value, // Now a number
+        amount: amountValidation.value,
         order_id: orderId,
         currency,
         product_name: 'Пополнение Steam',
@@ -36,17 +34,6 @@ export function buildPaymentData(params, config) {
         description: `Пополнение Steam для ${steamLogin}`,
         success_url: successUrl,
         fail_url: failUrl,
-    
-        receipt: receipt || {
-            items: [{
-                name: 'Пополнение баланса Steam',
-                quantity: 1,
-                price: amountValidation.value,
-                sum: amountValidation.value,
-                payment_method: 'full_prepayment',
-                payment_object: 'service'
-            }]
-        },
 
         // Add secret key for signature generation
         secretKey: config.secretKey
