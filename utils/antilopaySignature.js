@@ -10,8 +10,8 @@ export function generateAntilopaySignature(data) {
         const jsonString = JSON.stringify(paymentData);
         logger.debug('Data for signature:', jsonString);
 
-        // Create signature using RSA-SHA256
-        const sign = crypto.createSign('SHA256WithRSA');
+        // Create signature using SHA256 with RSA
+        const sign = crypto.createSign('sha256');
         sign.write(jsonString);
         sign.end();
 
