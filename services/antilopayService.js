@@ -37,7 +37,8 @@ export class AntilopayService {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'X-Apay-Sign': signature,
-                    'X-Apay-Sign-Version': '1'
+                    'X-Apay-Sign-Version': '1',
+                    'X-Apay-Secret-Id': this.secretKey // Add this header for authentication
                 },
                 body: JSON.stringify(fullPaymentData)
             });
