@@ -1,5 +1,6 @@
 import logger from '../config/logger.js';
 import { validateAmount } from './validators.js';
+import { buildCustomerData } from './customerDataBuilder.js';
 
 /**
  * Builds payment request data with all required fields
@@ -29,6 +30,9 @@ export function buildPaymentData(params, config) {
         currency,
         product_name: 'Пополнение Steam',
         product_type: 'services',
+
+        // Customer data
+        customer: buildCustomerData(),
 
         // Optional fields
         description: `Пополнение Steam для ${steamLogin}`,
