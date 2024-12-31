@@ -12,8 +12,7 @@ router.post('/create', async (req, res) => {
         logger.info('Payment request received:', {
             steamLogin,
             amount,
-            finalAmount,
-            timestamp: new Date().toISOString()
+            finalAmount
         });
 
         const paymentData = {
@@ -41,17 +40,13 @@ router.post('/create', async (req, res) => {
 
         const paymentUrl = await antilopayService.createPayment(paymentData);
         
-        logger.info('Payment URL created:', {
-            paymentUrl,
-            timestamp: new Date().toISOString()
-        });
+        logger.info('Payment URL created:', { paymentUrl });
         
         res.json({ paymentUrl });
     } catch (error) {
         logger.error('Payment creation error:', {
             error: error.message,
-            stack: error.stack,
-            timestamp: new Date().toISOString()
+            stack: error.stack
         });
         
         res.status(500).json({ 
