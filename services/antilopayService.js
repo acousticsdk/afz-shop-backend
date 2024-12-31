@@ -25,6 +25,8 @@ export class AntilopayService {
             data.customer?.phone || ''
         ].join('|');
 
+        logger.debug('Generating signature with string:', signString);
+
         return crypto
             .createHmac('sha256', this.secretKey)
             .update(signString)
@@ -38,44 +40,52 @@ export class AntilopayService {
                 merchant: this.merchantId,
                 project_identificator: this.projectId,
                 capture: 'AUTO',
-                ttl: 3600,
-                signature: ''
+                ttl: 3600
             };
 
             fullPaymentData.signature = this.generateSignature(fullPaymentData);
 
             logger.info('Creating payment request:', {
                 url: `${this.baseUrl}/payment/create`,
-                data: fullPaymentData
+                data: fullPaymentData,
+                timestamp: new Date().toISOString()
             });
 
             const response = await fetch(`${this.baseUrl}/payment/create`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Apay-Secret-Id': this.secretKey // Add required header
+                    'Accept': 'application/json',
+                    'X-Apay-Secret-Id': this.secretKey
                 },
                 body: JSON.stringify(fullPaymentData)
             });
 
             const responseData = await response.json();
-            logger.info('Antilopay response:', responseData);
+            logger.info('Antilopay response:', {
+                status: response.status,
+                data: responseData,
+                timestamp: new Date().toISOString()
+            });
 
             if (!response.ok) {
                 throw new Error(responseData.error || responseData.message || 'Payment creation failed');
             }
 
-            const { payment_id } = responseData;
-            if (!payment_id) {
+            if (!responseData.payment_id) {
+                logger.error('Invalid Antilopay response:', responseData);
                 throw new Error('Payment ID not received from Antilopay');
             }
 
-            return `${this.gateUrl}/${payment_id}`;
+            const paymentUrl = `${this.gateUrl}/${responseData.payment_id}`;
+            logger.info('Payment URL generated:', paymentUrl);
+
+            return paymentUrl;
         } catch (error) {
             logger.error('Antilopay API error:', {
                 message: error.message,
                 stack: error.stack,
-                data: error.response?.data
+                timestamp: new Date().toISOString()
             });
             throw error;
         }
