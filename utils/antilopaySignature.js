@@ -3,31 +3,23 @@ import logger from '../config/logger.js';
 
 export function generateAntilopaySignature(data) {
     try {
-        // Create signature string according to Antilopay documentation
-        const signatureFields = [
-            data.merchant,
-            data.project_identificator,
-            data.amount,
-            data.currency,
-            data.orderId,
-            data.description || '',
-            data.successUrl || '',
-            data.failUrl || '',
-            data.capture || '',
-            data.ttl?.toString() || '',
-            data.customer?.email || '',
-            data.customer?.phone || ''
-        ];
+        // Remove fields that shouldn't be in the signature
+        const paymentData = { ...data };
+        delete paymentData.secretKey;
+        delete paymentData.signature;
 
-        const signString = signatureFields.join('|');
+        // Convert data to JSON string without spaces
+        const jsonString = JSON.stringify(paymentData);
+        
+        logger.debug('Payment data for signature:', jsonString);
 
-        logger.debug('Generating signature with string:', signString);
+        // Format private key for crypto
+        const privateKey = `${data.secretKey}`;
 
-        // Create HMAC SHA256 signature
-        const signature = crypto
-            .createHmac('sha256', data.secretKey)
-            .update(signString)
-            .digest('base64');
+        // Create signature using RSA-SHA256
+        const sign = crypto.createSign('RSA-SHA256');
+        sign.update(jsonString);
+        const signature = sign.sign(privateKey, 'base64');
 
         logger.debug('Generated signature:', signature);
 

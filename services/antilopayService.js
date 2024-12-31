@@ -16,13 +16,11 @@ export class AntilopayService {
                 ...paymentData,
                 merchant: this.merchantId,
                 project_identificator: this.projectId,
-                secretKey: this.secretKey, // Will be used for signature and removed before sending
-                capture: 'AUTO',
-                ttl: 3600
+                secretKey: this.secretKey
             };
 
             // Generate signature
-            fullPaymentData.signature = generateAntilopaySignature(fullPaymentData);
+            const signature = generateAntilopaySignature(fullPaymentData);
             
             // Remove secret key before sending
             delete fullPaymentData.secretKey;
@@ -38,7 +36,8 @@ export class AntilopayService {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'X-Apay-Secret-Id': this.secretKey
+                    'X-Apay-Sign': signature,
+                    'X-Apay-Sign-Version': '1'
                 },
                 body: JSON.stringify(fullPaymentData)
             });
