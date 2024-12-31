@@ -29,7 +29,7 @@ export function buildPaymentData(params, config) {
         order_id: orderId,
         currency,
         product_name: 'Пополнение Steam',
-        product_type: 'services',
+        product_type: 'goods',
 
         // Customer data
         customer: buildCustomerData(),
