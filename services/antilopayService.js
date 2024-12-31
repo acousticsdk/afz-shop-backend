@@ -20,7 +20,7 @@ export class AntilopayService {
             };
 
             // Generate signature
-            const signature = generateAntilopaySignature(fullPaymentData);
+            const signature = await generateAntilopaySignature(fullPaymentData);
             
             // Remove secret key before sending
             delete fullPaymentData.secretKey;
@@ -38,7 +38,7 @@ export class AntilopayService {
                     'Accept': 'application/json',
                     'X-Apay-Sign': signature,
                     'X-Apay-Sign-Version': '1',
-                    'X-Apay-Secret-Id': this.secretKey // Add this header for authentication
+                    'X-Apay-Secret-Id': this.secretKey
                 },
                 body: JSON.stringify(fullPaymentData)
             });
