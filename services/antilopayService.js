@@ -13,19 +13,14 @@ export class AntilopayService {
 
     async createPayment(paymentData) {
         try {
-            // Format amount to always have 2 decimal places
-            const formattedAmount = Number(paymentData.amount).toFixed(2);
-            
-            // Prepare request data according to API specification
+            // Prepare minimal request data according to API specification
             const requestData = {
                 merchant: this.merchantId,
                 project_identificator: this.projectId,
-                amount: formattedAmount,
-                currency: 'RUB', // API requires uppercase
+                amount: Number(paymentData.amount).toFixed(2),
+                currency: 'RUB',
                 order_id: paymentData.orderId,
                 description: paymentData.description,
-                success_url: paymentData.successUrl || `${process.env.FRONTEND_URL}/success`,
-                fail_url: paymentData.failUrl || `${process.env.FRONTEND_URL}/fail`,
                 secretKey: this.secretKey
             };
 
@@ -34,11 +29,6 @@ export class AntilopayService {
 
             // Remove secretKey before sending
             delete requestData.secretKey;
-
-            logger.info('Creating payment request:', {
-                url: `${this.baseUrl}/payment/create`,
-                data: requestData
-            });
 
             const response = await fetch(`${this.baseUrl}/payment/create`, {
                 method: 'POST',
@@ -53,10 +43,9 @@ export class AntilopayService {
             });
 
             const responseData = await response.json();
-            logger.info('Payment API response:', responseData);
 
             if (!response.ok || responseData.code !== 0) {
-                throw new Error(responseData.error || responseData.message || 'Payment creation failed');
+                throw new Error(responseData.error || 'Payment creation failed');
             }
 
             return `${this.gateUrl}/${responseData.payment_id}`;
