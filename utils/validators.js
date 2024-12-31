@@ -1,7 +1,7 @@
 /**
- * Validates and formats payment amount
+ * Validates payment amount
  * @param {number|string} amount Amount to validate
- * @returns {{isValid: boolean, error?: string, value?: string}} Validation result
+ * @returns {{isValid: boolean, error?: string, value?: number}} Validation result
  */
 export function validateAmount(amount) {
     // Convert to number and check validity
@@ -15,8 +15,9 @@ export function validateAmount(amount) {
         return { isValid: false, error: 'Amount must be greater than 0' };
     }
     
-    // Format to 2 decimal places
-    const formattedAmount = numAmount.toFixed(2);
-    
-    return { isValid: true, value: formattedAmount };
+    // Return the numeric value with 2 decimal precision
+    return { 
+        isValid: true, 
+        value: Number(numAmount.toFixed(2))
+    };
 }

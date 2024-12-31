@@ -7,7 +7,7 @@ import { validateAmount } from './validators.js';
  */
 export function buildPaymentData(params, config) {
     const {
-        amount, // We now expect amount directly
+        amount,
         steamLogin,
         currency = 'RUB',
         orderId = `ORDER${Date.now()}`,
@@ -26,7 +26,7 @@ export function buildPaymentData(params, config) {
     const requestData = {
         // Required fields
         project_identificator: config.projectId,
-        amount: amountValidation.value,
+        amount: amountValidation.value, // Now a number
         order_id: orderId,
         currency,
         product_name: 'Пополнение Steam',

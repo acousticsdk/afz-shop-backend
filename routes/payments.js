@@ -1,7 +1,6 @@
 import express from 'express';
 import { AntilopayService } from '../services/antilopayService.js';
 import logger from '../config/logger.js';
-import { formatAmount } from '../utils/formatters.js';
 
 const router = express.Router();
 const antilopayService = new AntilopayService();
@@ -9,15 +8,14 @@ const antilopayService = new AntilopayService();
 router.post('/create', async (req, res) => {
     try {
         const { steamLogin, finalAmount } = req.body;
-        const formattedAmount = formatAmount(finalAmount);
         
         logger.info('Payment request received:', {
             steamLogin,
-            amount: formattedAmount
+            amount: finalAmount
         });
 
         const paymentUrl = await antilopayService.createPayment({
-            amount: formattedAmount,
+            amount: finalAmount, // Pass as number
             steamLogin,
             successUrl: `${process.env.FRONTEND_URL}/success`,
             failUrl: `${process.env.FRONTEND_URL}/fail`,
