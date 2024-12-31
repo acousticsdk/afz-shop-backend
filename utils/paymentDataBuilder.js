@@ -6,11 +6,12 @@ import { validateAmount } from './validators.js';
  * @throws {Error} If amount validation fails
  */
 export function buildPaymentData(params, config) {
+    // Use finalAmount as amount in the request
     const {
-        amount,
+        finalAmount: amount, // Rename finalAmount to amount
+        steamLogin,
         currency = 'RUB',
         orderId = `ORDER${Date.now()}`,
-        description,
         successUrl,
         failUrl,
         customer,
@@ -33,11 +34,20 @@ export function buildPaymentData(params, config) {
         product_type: 'services',
 
         // Optional fields
-        description,
+        description: `Пополнение Steam для ${steamLogin}`,
         success_url: successUrl,
         fail_url: failUrl,
         customer,
-        receipt,
+        receipt: receipt || {
+            items: [{
+                name: 'Пополнение баланса Steam',
+                quantity: 1,
+                price: amountValidation.value,
+                sum: amountValidation.value,
+                payment_method: 'full_prepayment',
+                payment_object: 'service'
+            }]
+        },
 
         // Add secret key for signature generation
         secretKey: config.secretKey
