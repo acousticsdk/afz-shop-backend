@@ -15,13 +15,14 @@ router.post('/create', async (req, res) => {
         });
 
         const paymentUrl = await antilopayService.createPayment({
-            amount: finalAmount, // Pass as number
+            amount: finalAmount,
             steamLogin,
             successUrl: `${process.env.FRONTEND_URL}/success`,
             failUrl: `${process.env.FRONTEND_URL}/fail`,
             customer: {
                 email: 'test@example.com',
-                phone: '79001234567'
+                phone: '79001234567',
+                name: `Steam User ${steamLogin}`
             }
         });
         

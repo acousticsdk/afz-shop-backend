@@ -10,3 +10,21 @@ export function formatAmount(amount) {
     }
     return numAmount.toFixed(2);
 }
+
+/**
+ * Formats phone number to E.164 format
+ * @param {string} phone Phone number to format
+ * @returns {string} Formatted phone number
+ */
+export function formatPhone(phone) {
+    // Remove all non-digit characters
+    const digits = phone.replace(/\D/g, '');
+    
+    // Check if it's a valid Russian phone number
+    if (digits.length === 11 && (digits.startsWith('7') || digits.startsWith('8'))) {
+        return `+7${digits.slice(1)}`;
+    }
+    
+    // For other countries, just add + if not present
+    return digits.startsWith('+') ? digits : `+${digits}`;
+}
