@@ -13,13 +13,19 @@ export class AntilopayService {
 
     async createPayment(paymentData) {
         try {
-            // Prepare request data exactly as shown in API example
+            // Format amount to always have 2 decimal places
+            const formattedAmount = Number(paymentData.amount).toFixed(2);
+            
+            // Prepare request data according to API specification
             const requestData = {
+                merchant: this.merchantId,
                 project_identificator: this.projectId,
-                amount: paymentData.amount,
-                currency: paymentData.currency.toLowerCase(),
+                amount: formattedAmount,
+                currency: 'RUB', // API requires uppercase
                 order_id: paymentData.orderId,
                 description: paymentData.description,
+                success_url: paymentData.successUrl || `${process.env.FRONTEND_URL}/success`,
+                fail_url: paymentData.failUrl || `${process.env.FRONTEND_URL}/fail`,
                 secretKey: this.secretKey
             };
 
