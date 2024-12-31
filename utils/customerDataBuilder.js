@@ -5,6 +5,6 @@
 export function buildCustomerData() {
     return {
         email: 'test@example.com',
-        phone: '+79001234567'
+        phone: '+7 800 7750000'
     };
 }
