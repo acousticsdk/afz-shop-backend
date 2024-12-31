@@ -1,34 +1,24 @@
 import crypto from 'crypto';
 import logger from '../config/logger.js';
-import { formatPrivateKey } from './keyFormatter.js';
 
 export function generateAntilopaySignature(data) {
     try {
-        // Create a clean data object for signature
-        const paymentData = {
-            project_identificator: data.project_identificator,
-            amount: data.amount,
-            order_id: data.order_id,
-            currency: data.currency,
-            description: data.description
-        };
-
+        // Create a clean data object without secretKey
+        const { secretKey, ...paymentData } = data;
+        
         // Convert to JSON string without spaces
         const jsonString = JSON.stringify(paymentData);
         logger.debug('Data for signature:', jsonString);
 
-        const sign = crypto.createSign('RSA-SHA256');
-        sign.update(jsonString);
-        
-        // Format the private key before signing
-        const formattedKey = formatPrivateKey(data.secretKey);
-        
-        return sign.sign(formattedKey, 'base64');
+        // Create signature using RSA-SHA256
+        const sign = crypto.createSign('SHA256WithRSA');
+        sign.write(jsonString);
+        sign.end();
+
+        // The private key should already be in correct format from the API
+        return sign.sign(secretKey, 'base64');
     } catch (error) {
-        logger.error('Signature generation error:', {
-            message: error.message,
-            stack: error.stack
-        });
+        logger.error('Signature generation error:', error);
         throw error;
     }
 }

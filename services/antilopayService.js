@@ -13,16 +13,26 @@ export class AntilopayService {
 
     async createPayment(paymentData) {
         try {
+            // Prepare request data exactly as shown in API example
             const requestData = {
                 project_identificator: this.projectId,
                 amount: paymentData.amount,
-                currency: paymentData.currency || 'RUB',
+                currency: paymentData.currency.toLowerCase(),
                 order_id: paymentData.orderId,
                 description: paymentData.description,
                 secretKey: this.secretKey
             };
 
+            // Generate signature
             const signature = generateAntilopaySignature(requestData);
+
+            // Remove secretKey before sending
+            delete requestData.secretKey;
+
+            logger.info('Creating payment request:', {
+                url: `${this.baseUrl}/payment/create`,
+                data: requestData
+            });
 
             const response = await fetch(`${this.baseUrl}/payment/create`, {
                 method: 'POST',
@@ -37,9 +47,10 @@ export class AntilopayService {
             });
 
             const responseData = await response.json();
-            
+            logger.info('Payment API response:', responseData);
+
             if (!response.ok || responseData.code !== 0) {
-                throw new Error(responseData.error || 'Payment creation failed');
+                throw new Error(responseData.error || responseData.message || 'Payment creation failed');
             }
 
             return `${this.gateUrl}/${responseData.payment_id}`;
