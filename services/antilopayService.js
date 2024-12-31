@@ -1,9 +1,11 @@
 import crypto from 'crypto';
+import logger from '../config/logger.js';
 
 export class AntilopayService {
     constructor() {
         this.merchantId = process.env.ANTILOPAY_MERCHANT_ID;
         this.secretKey = process.env.ANTILOPAY_SECRET_KEY;
+        this.projectId = process.env.ANTILOPAY_PROJECT_ID;
         this.baseUrl = 'https://lk.antilopay.com/api/v1';
         this.gateUrl = 'https://gate.antilopay.com/#payment';
     }
@@ -31,25 +33,49 @@ export class AntilopayService {
 
     async createPayment(paymentData) {
         try {
-            paymentData.signature = this.generateSignature(paymentData);
+            const fullPaymentData = {
+                ...paymentData,
+                merchant: this.merchantId,
+                project_identificator: this.projectId,
+                capture: 'AUTO',
+                ttl: 3600,
+                signature: ''
+            };
+
+            fullPaymentData.signature = this.generateSignature(fullPaymentData);
+
+            logger.info('Creating payment request:', {
+                url: `${this.baseUrl}/payment/create`,
+                data: fullPaymentData
+            });
 
             const response = await fetch(`${this.baseUrl}/payment/create`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(paymentData)
+                body: JSON.stringify(fullPaymentData)
             });
 
+            const responseData = await response.json();
+            logger.info('Antilopay response:', responseData);
+
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Payment creation failed');
+                throw new Error(responseData.message || 'Payment creation failed');
             }
 
-            const { payment_id, payment_url } = await response.json();
-            return payment_url || `${this.gateUrl}/${payment_id}`;
+            const { payment_id } = responseData;
+            if (!payment_id) {
+                throw new Error('Payment ID not received from Antilopay');
+            }
+
+            return `${this.gateUrl}/${payment_id}`;
         } catch (error) {
-            console.error('Antilopay API error:', error);
+            logger.error('Antilopay API error:', {
+                message: error.message,
+                stack: error.stack,
+                data: error.response?.data
+            });
             throw error;
         }
     }
