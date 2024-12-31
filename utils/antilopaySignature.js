@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import logger from '../config/logger.js';
+import { formatPrivateKey } from './keyFormatter.js';
 
 export function generateAntilopaySignature(data) {
     try {
@@ -19,9 +20,15 @@ export function generateAntilopaySignature(data) {
         const sign = crypto.createSign('RSA-SHA256');
         sign.update(jsonString);
         
-        return sign.sign(data.secretKey, 'base64');
+        // Format the private key before signing
+        const formattedKey = formatPrivateKey(data.secretKey);
+        
+        return sign.sign(formattedKey, 'base64');
     } catch (error) {
-        logger.error('Signature generation error:', error);
-        throw new Error('Failed to generate signature');
+        logger.error('Signature generation error:', {
+            message: error.message,
+            stack: error.stack
+        });
+        throw error;
     }
 }
