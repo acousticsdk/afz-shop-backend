@@ -1,5 +1,5 @@
 import express from 'express';
-import cors from 'cors';
+import { corsConfig, handlePreflight } from './config/cors.js';
 import { paymentRoutes } from './routes/payments.js';
 import dotenv from 'dotenv';
 
@@ -8,14 +8,11 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Configure CORS
-app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
-}));
+// CORS configuration
+app.use(corsConfig);
+app.use(handlePreflight);
 
+// Middleware
 app.use(express.json());
 
 // Routes
@@ -30,6 +27,15 @@ app.get('/steam/rates', (req, res) => {
                 { code: 'USD', rate: 0.0091 }
             ]
         }
+    });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({
+        error: 'Internal Server Error',
+        message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
     });
 });
 
