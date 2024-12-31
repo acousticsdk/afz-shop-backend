@@ -36,7 +36,7 @@ export function buildPaymentData(params, config) {
         description: `Пополнение Steam для ${steamLogin}`,
         success_url: successUrl,
         fail_url: failUrl,
-        customer,
+    
         receipt: receipt || {
             items: [{
                 name: 'Пополнение баланса Steam',
