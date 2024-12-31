@@ -1,13 +1,16 @@
 import express from 'express';
 import cors from 'cors';
 import { paymentRoutes } from './routes/payments.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Configure CORS to allow requests from the frontend
+// Configure CORS
 app.use(cors({
-    origin: ['https://sparkling-caramel-9bec53.netlify.app', 'http://localhost:3000'],
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
@@ -28,11 +31,6 @@ app.get('/steam/rates', (req, res) => {
             ]
         }
     });
-});
-
-// Health check
-app.get('/health', (req, res) => {
-    res.json({ status: 'ok' });
 });
 
 app.listen(PORT, () => {
