@@ -1,5 +1,5 @@
-import crypto from 'crypto';
 import logger from '../config/logger.js';
+import { generateAntilopaySignature } from '../utils/antilopaySignature.js';
 
 export class AntilopayService {
     constructor() {
@@ -10,40 +10,22 @@ export class AntilopayService {
         this.gateUrl = 'https://gate.antilopay.com/#payment';
     }
 
-    generateSignature(data) {
-        const signString = [
-            data.merchant,
-            data.amount,
-            data.currency,
-            data.orderId,
-            data.description,
-            data.successUrl || '',
-            data.failUrl || '',
-            data.capture || '',
-            data.ttl?.toString() || '',
-            data.customer?.email || '',
-            data.customer?.phone || ''
-        ].join('|');
-
-        logger.debug('Generating signature with string:', signString);
-
-        return crypto
-            .createHmac('sha256', this.secretKey)
-            .update(signString)
-            .digest('base64');
-    }
-
     async createPayment(paymentData) {
         try {
             const fullPaymentData = {
                 ...paymentData,
                 merchant: this.merchantId,
                 project_identificator: this.projectId,
+                secretKey: this.secretKey, // Will be used for signature and removed before sending
                 capture: 'AUTO',
                 ttl: 3600
             };
 
-            fullPaymentData.signature = this.generateSignature(fullPaymentData);
+            // Generate signature
+            fullPaymentData.signature = generateAntilopaySignature(fullPaymentData);
+            
+            // Remove secret key before sending
+            delete fullPaymentData.secretKey;
 
             logger.info('Creating payment request:', {
                 url: `${this.baseUrl}/payment/create`,
@@ -68,7 +50,7 @@ export class AntilopayService {
                 timestamp: new Date().toISOString()
             });
 
-            if (!response.ok) {
+            if (!response.ok || responseData.code !== 0) {
                 throw new Error(responseData.error || responseData.message || 'Payment creation failed');
             }
 
