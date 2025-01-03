@@ -1,5 +1,6 @@
 import express from 'express';
 import { steamService } from '../services/steamService.js';
+import { steamCurrencyService } from '../services/steamCurrencyService.js';
 
 const router = express.Router();
 
@@ -55,10 +56,10 @@ router.post('/topup/create', async (req, res, next) => {
     }
 });
 
-// Get currency rates
+// Get currency rates from Steam Currency API
 router.get('/rates', async (req, res, next) => {
     try {
-        const rates = await steamService.getRates();
+        const rates = await steamCurrencyService.getRates();
         res.json(rates);
     } catch (error) {
         next(error);

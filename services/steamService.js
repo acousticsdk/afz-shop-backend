@@ -4,33 +4,27 @@ import { generateSignature } from '../utils/signatureGenerator.js';
 
 class SteamService {
     constructor() {
-        // Antilopay API client
+        // Initialize Antilopay API client
         this.antilopayClient = axios.create({
             baseURL: config.antilopay.baseUrl,
             headers: {
                 'Content-Type': 'application/json'
             }
         });
-
-        // Steam Currency API client
-        this.steamCurrencyClient = axios.create({
-            baseURL: 'https://api.steam-currency.ru',
-            headers: {
-                'Authorization': `Bearer ${config.steamCurrency.token}`,
-                'Accept': 'application/json'
-            }
-        });
     }
 
     async checkAccount(steamAccount) {
         try {
+            // Prepare request data
             const data = {
                 project_identificator: config.antilopay.projectId,
                 steam_account: steamAccount
             };
 
+            // Generate signature according to Antilopay docs (section 3.4)
             const signature = generateSignature(data, config.antilopay.privateKey);
 
+            // Make API request
             const response = await this.antilopayClient.post('/steam/account/check', data, {
                 headers: {
                     'X-Signature': signature
@@ -49,6 +43,7 @@ class SteamService {
 
     async createTopup(params) {
         try {
+            // Prepare request data
             const data = {
                 project_identificator: config.antilopay.projectId,
                 steam_account: params.steam_account,
@@ -60,8 +55,10 @@ class SteamService {
                 customer: params.customer
             };
 
+            // Generate signature according to Antilopay docs (section 3.4)
             const signature = generateSignature(data, config.antilopay.privateKey);
 
+            // Make API request
             const response = await this.antilopayClient.post('/steam/topup/create', data, {
                 headers: {
                     'X-Signature': signature
@@ -77,28 +74,7 @@ class SteamService {
             throw new Error(error.response?.data?.error || 'Failed to create Steam topup');
         }
     }
-
-    async getRates() {
-        try {
-            // Steam Currency API returns rates in format described in their docs
-            const response = await this.steamCurrencyClient.get('/v1/rates/all');
-            
-            // Transform response to match expected format
-            const rates = {
-                data: {
-                    currencies: Object.entries(response.data.rates).map(([code, rate]) => ({
-                        code,
-                        rate: parseFloat(rate)
-                    }))
-                }
-            };
-
-            return rates;
-        } catch (error) {
-            console.error('Steam currency rates error:', error.response?.data || error);
-            throw new Error('Failed to get currency rates');
-        }
-    }
 }
 
+// Export singleton instance
 export const steamService = new SteamService();
