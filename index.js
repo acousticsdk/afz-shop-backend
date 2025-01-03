@@ -3,10 +3,9 @@ import morgan from 'morgan';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { corsConfig, handlePreflight } from './config/cors.js';
-import { steamRoutes } from './routes/steam.js';
-import { paymentRoutes } from './routes/payments.js';
 import { requestLogger, errorLogger } from './config/logger.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { validateSteamLogin } from './utils/validators.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -35,33 +34,74 @@ app.use(handlePreflight);
 // Body parsing
 app.use(express.json());
 
-// Routes
-app.use('/api/steam', steamRoutes);
-app.use('/api/payments', paymentRoutes);
-
 // Steam rates endpoint
 app.get('/steam/rates', (req, res) => {
-    res.json({
-        data: {
-            currencies: [
-                { code: 'KZT', rate: 4.75 },
-                { code: 'USD', rate: 0.0091 }
-            ]
+    try {
+        res.json({
+            data: {
+                currencies: [
+                    { code: 'KZT', rate: 4.75 },
+                    { code: 'USD', rate: 0.0091 }
+                ]
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            error: 'Failed to get currency rates'
+        });
+    }
+});
+
+// Steam account check endpoint
+app.post('/steam/account/check', async (req, res) => {
+    try {
+        const { login } = req.body;
+        
+        if (!login) {
+            return res.status(400).json({
+                error: 'Missing Steam login'
+            });
         }
-    });
+
+        const validation = await validateSteamLogin(login);
+        if (!validation.isValid) {
+            return res.status(400).json({
+                error: validation.error || 'Invalid Steam login'
+            });
+        }
+
+        res.json({ can_topup: true });
+    } catch (error) {
+        res.status(500).json({
+            error: 'Failed to validate Steam account'
+        });
+    }
+});
+
+// Create Steam topup endpoint
+app.post('/steam/topup/create', async (req, res) => {
+    try {
+        const { login, amount, currency = 'RUB' } = req.body;
+
+        if (!login || !amount) {
+            return res.status(400).json({
+                error: 'Missing required fields'
+            });
+        }
+
+        // Simulate payment URL creation
+        const paymentUrl = `https://payment.provider.com/pay/${Date.now()}`;
+        res.json({ payment_url: paymentUrl });
+    } catch (error) {
+        res.status(500).json({
+            error: 'Failed to create payment'
+        });
+    }
 });
 
 // Error handling
 app.use(errorLogger);
 app.use(errorHandler);
-
-// 404 handler
-app.use((req, res) => {
-    res.status(404).json({
-        error: 'Not Found',
-        message: `Route ${req.originalUrl} not found`
-    });
-});
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
