@@ -28,34 +28,63 @@ class SteamCurrencyService {
                 return this.cache.rates;
             }
 
-            // Get rates for each currency pair
             const rates = {
                 data: {
                     currencies: []
                 }
             };
 
-            // Get rates for KZT and USD using RUB as base
-            for (const currency of ['KZT', 'USD']) {
-                try {
-                    // Use RUB:KZT instead of KZT:RUB for proper rate
-                    console.log(`Getting rate for RUB:${currency}`);
-                    const response = await this.client.get(`/currency/RUB:${currency}`);
-                    console.log(`RUB:${currency} rate response:`, response.data);
+            // Get USD:RUB rate
+            try {
+                console.log('Getting USD:RUB rate');
+                const usdResponse = await this.client.get('/currency/USD:RUB', {
+                    params: { count: 1 }
+                });
+                
+                console.log('USD:RUB response:', usdResponse.data);
 
-                    if (response.data && response.data.rate) {
+                if (Array.isArray(usdResponse.data) && usdResponse.data.length > 0) {
+                    const latestUsdRate = usdResponse.data
+                        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+                    
+                    if (latestUsdRate?.close_price) {
                         rates.data.currencies.push({
-                            code: currency,
-                            rate: response.data.rate // Use rate directly as it's already in correct format
+                            code: 'USD',
+                            // Convert USD:RUB rate to RUB:USD rate
+                            rate: 1 / parseFloat(latestUsdRate.close_price)
                         });
                     }
-                } catch (currencyError) {
-                    console.error(`Error getting RUB:${currency} rate:`, currencyError.response?.data || currencyError);
                 }
+            } catch (usdError) {
+                console.error('Error getting USD:RUB rate:', usdError.response?.data);
             }
 
-            // Log transformed rates
-            console.log('Final transformed rates:', rates);
+            // Get RUB:KZT rate
+            try {
+                console.log('Getting RUB:KZT rate');
+                const kztResponse = await this.client.get('/currency/RUB:KZT', {
+                    params: { count: 1 }
+                });
+                
+                console.log('RUB:KZT response:', kztResponse.data);
+
+                if (Array.isArray(kztResponse.data) && kztResponse.data.length > 0) {
+                    const latestKztRate = kztResponse.data
+                        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+                    
+                    if (latestKztRate?.close_price) {
+                        rates.data.currencies.push({
+                            code: 'KZT',
+                            rate: parseFloat(latestKztRate.close_price)
+                        });
+                    }
+                }
+            } catch (kztError) {
+                console.error('Error getting RUB:KZT rate:', kztError.response?.data);
+            }
+
+            // Log final rates
+            console.log('Final rates:', rates);
 
             // Update cache if we got at least one rate
             if (rates.data.currencies.length > 0) {
@@ -68,22 +97,15 @@ class SteamCurrencyService {
             console.error('Steam currency rates error:', {
                 message: error.message,
                 response: error.response?.data,
-                status: error.response?.status,
-                config: {
-                    url: error.config?.url,
-                    headers: {
-                        ...error.config?.headers,
-                        'api-token': '[REDACTED]'
-                    }
-                }
+                status: error.response?.status
             });
             
             // Return fallback rates if API fails
             const fallbackRates = {
                 data: {
                     currencies: [
-                        { code: 'KZT', rate: 5.55 },
-                        { code: 'USD', rate: 6.666 }
+                        { code: 'KZT', rate: 4.75 },
+                        { code: 'USD', rate: 0.0091 }
                     ]
                 }
             };
