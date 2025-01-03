@@ -28,11 +28,6 @@ class SteamCurrencyService {
                 return this.cache.rates;
             }
 
-            // First get available currencies
-            console.log('Getting available currencies...');
-            const availableResponse = await this.client.get('/currency/available');
-            console.log('Available currencies response:', availableResponse.data);
-
             // Get rates for each currency pair
             const rates = {
                 data: {
@@ -40,21 +35,22 @@ class SteamCurrencyService {
                 }
             };
 
-            // Get rates for KZT and USD
+            // Get rates for KZT and USD using RUB as base
             for (const currency of ['KZT', 'USD']) {
                 try {
-                    console.log(`Getting rate for ${currency}:RUB`);
-                    const response = await this.client.get(`/currency/${currency}:RUB`);
-                    console.log(`${currency} rate response:`, response.data);
+                    // Use RUB:KZT instead of KZT:RUB for proper rate
+                    console.log(`Getting rate for RUB:${currency}`);
+                    const response = await this.client.get(`/currency/RUB:${currency}`);
+                    console.log(`RUB:${currency} rate response:`, response.data);
 
                     if (response.data && response.data.rate) {
                         rates.data.currencies.push({
                             code: currency,
-                            rate: 1 / response.data.rate // Invert rate to match our format
+                            rate: response.data.rate // Use rate directly as it's already in correct format
                         });
                     }
                 } catch (currencyError) {
-                    console.error(`Error getting ${currency} rate:`, currencyError.response?.data || currencyError);
+                    console.error(`Error getting RUB:${currency} rate:`, currencyError.response?.data || currencyError);
                 }
             }
 
@@ -86,8 +82,8 @@ class SteamCurrencyService {
             const fallbackRates = {
                 data: {
                     currencies: [
-                        { code: 'KZT', rate: 4.75 },
-                        { code: 'USD', rate: 0.0091 }
+                        { code: 'KZT', rate: 5.55 },
+                        { code: 'USD', rate: 6.666 }
                     ]
                 }
             };
