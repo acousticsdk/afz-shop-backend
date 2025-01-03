@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { config } from '../config.js';
-import { formatCurrencyRate } from '../utils/currencyFormatter.js';
+import { formatCurrencyRate, formatKZTRate } from '../utils/currencyFormatter.js';
 
 class SteamCurrencyService {
     constructor() {
@@ -36,9 +36,12 @@ class SteamCurrencyService {
 
             // Get both currency pairs with proper parameters
             const [usdRate, kztRate] = await Promise.all([
-                this.getCurrencyRate('RUB:USD', 5),
+                this.getCurrencyRate('USD:RUB', 5),
                 this.getCurrencyRate('RUB:KZT', 5)
             ]);
+
+            console.log('USD:RUB rate:', usdRate);
+            console.log('RUB:KZT rate:', kztRate);
 
             if (usdRate) {
                 rates.data.currencies.push({
@@ -50,7 +53,7 @@ class SteamCurrencyService {
             if (kztRate) {
                 rates.data.currencies.push({
                     code: 'KZT',
-                    rate: formatCurrencyRate(kztRate)
+                    rate: formatKZTRate(kztRate)
                 });
             }
 
@@ -85,7 +88,11 @@ class SteamCurrencyService {
                 const latestRate = response.data.data
                     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
                 
-                return latestRate?.close_price ? parseFloat(latestRate.close_price) : null;
+                if (latestRate?.close_price) {
+                    const rate = parseFloat(latestRate.close_price);
+                    console.log(`Latest ${pair} rate:`, rate);
+                    return rate;
+                }
             }
             
             return null;
