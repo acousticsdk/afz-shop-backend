@@ -1,69 +1,82 @@
+import { ANTILOPAY_CONFIG } from '../config/antilopayConfig.js';
 import logger from '../config/logger.js';
-import { generateAntilopaySignature } from '../utils/antilopaySignature.js';
-import { buildPaymentData } from '../utils/paymentDataBuilder.js';
 
 export class AntilopayService {
     constructor() {
-        this.config = {
-            merchantId: process.env.ANTILOPAY_MERCHANT_ID,
-            secretId: process.env.ANTILOPAY_SECRET_ID,
-            projectId: process.env.ANTILOPAY_PROJECT_ID,
-            secretKey: process.env.ANTILOPAY_SECRET_KEY,
-            baseUrl: 'https://lk.antilopay.com/api/v1',
-            gateUrl: 'https://gate.antilopay.com/#payment'
-        };
+        this.config = ANTILOPAY_CONFIG;
     }
 
-    async createPayment(params) {
+    async validateSteamAccount(steamLogin) {
         try {
-            const requestData = buildPaymentData(params, this.config);
-            
-            // Log the complete request data before signature
-            logger.info('Complete payment request data:', {
-                ...requestData,
-                secretKey: '[REDACTED]'
-            });
-
-            const signature = generateAntilopaySignature(requestData);
-            
-            // Remove secret key before sending
-            delete requestData.secretKey;
-
-            // Log the final request that will be sent
-            logger.info('Final request data being sent:', {
-                url: `${this.config.baseUrl}/payment/create`,
+            const response = await fetch(`${this.config.BASE_URL}/steam/account/check`, {
+                method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-Apay-Sign': signature,
-                    'X-Apay-Sign-Version': '1',
-                    'X-Apay-Secret-Id': '[REDACTED]'
+                    'Content-Type': 'application/json'
                 },
-                body: requestData
+                body: JSON.stringify({
+                    project_identificator: this.config.PROJECT_ID,
+                    steam_account: steamLogin
+                })
             });
 
-            const response = await fetch(`${this.config.baseUrl}/payment/create`, {
+            logger.info('Steam account validation response:', {
+                status: response.status,
+                steamLogin
+            });
+
+            // Handle response based on status code as per documentation
+            switch (response.status) {
+                case 200:
+                    return { isValid: true };
+                case 400:
+                    return { isValid: false, error: 'Invalid request data' };
+                case 403:
+                    return { isValid: false, error: 'API access forbidden' };
+                case 404:
+                    return { isValid: false, error: 'Steam account not found or cannot be topped up' };
+                case 500:
+                    return { isValid: false, error: 'Server error, please try again later' };
+                default:
+                    return { isValid: false, error: 'Unknown error occurred' };
+            }
+        } catch (error) {
+            logger.error('Steam account validation error:', error);
+            return { 
+                isValid: false, 
+                error: 'Failed to validate Steam account'
+            };
+        }
+    }
+
+    async createTopup(params) {
+        try {
+            const { steamLogin, amount, currency = 'RUB' } = params;
+
+            const requestData = {
+                project_identificator: this.config.PROJECT_ID,
+                steam_account: steamLogin,
+                amount: parseFloat(amount).toFixed(2),
+                currency
+            };
+
+            const response = await fetch(`${this.config.BASE_URL}/steam/topup/create`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-Apay-Sign': signature,
-                    'X-Apay-Sign-Version': '1',
-                    'X-Apay-Secret-Id': this.config.secretId
+                    'Authorization': `Bearer ${this.config.SECRET_KEY}`
                 },
                 body: JSON.stringify(requestData)
             });
 
-            const responseData = await response.json();
-            logger.info('Payment API response:', responseData);
-
-            if (!response.ok || responseData.code !== 0) {
-                throw new Error(responseData.error || 'Payment creation failed');
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to create topup');
             }
 
-            return `${this.config.gateUrl}/${responseData.payment_id}`;
+            const data = await response.json();
+            return data.payment_url;
         } catch (error) {
-            logger.error('Payment creation error:', error);
+            logger.error('Steam topup creation error:', error);
             throw error;
         }
     }
