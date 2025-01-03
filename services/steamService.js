@@ -1,4 +1,5 @@
 import logger from '../config/logger.js';
+import { API_CONFIG } from '../config/apiConfig.js';
 
 export class SteamService {
     constructor(config) {
@@ -7,7 +8,7 @@ export class SteamService {
 
     async validateSteamAccount(steamLogin) {
         try {
-            const response = await fetch(`${this.config.baseUrl}/steam/account/check`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.STEAM.CHECK_ACCOUNT}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -32,7 +33,7 @@ export class SteamService {
 
     async createTopup(params) {
         try {
-            const response = await fetch(`${this.config.baseUrl}/steam/topup`, {
+            const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.STEAM.TOPUP}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
