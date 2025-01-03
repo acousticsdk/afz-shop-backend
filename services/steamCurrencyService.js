@@ -6,14 +6,25 @@ class SteamCurrencyService {
         this.client = axios.create({
             baseURL: 'https://api.steam-currency.ru/v3',
             headers: {
-                'Authorization': `Bearer ${config.steamCurrency.token}`,
+                'api-token': config.steamCurrency.token,
                 'Accept': 'application/json'
             }
         });
+        
+        // Cache rates for 5 minutes
+        this.cache = {
+            rates: null,
+            lastUpdate: 0
+        };
     }
 
     async getRates() {
         try {
+            // Check cache first
+            if (this.cache.rates && Date.now() - this.cache.lastUpdate < 5 * 60 * 1000) {
+                return this.cache.rates;
+            }
+
             // Get rates for required currency pairs
             const pairs = ['USD:RUB', 'RUB:KZT'];
             const requests = pairs.map(pair => this.client.get(`/currency/${pair}`));
@@ -46,20 +57,14 @@ class SteamCurrencyService {
                 }
             });
 
+            // Update cache
+            this.cache.rates = rates;
+            this.cache.lastUpdate = Date.now();
+
             return rates;
         } catch (error) {
             console.error('Steam currency rates error:', error.response?.data || error);
-            throw new Error('Failed to get currency rates');
-        }
-    }
-
-    async getRate(from, to) {
-        try {
-            const response = await this.client.get(`/currency/${from}:${to}`);
-            return response.data.rate;
-        } catch (error) {
-            console.error('Steam currency rate error:', error.response?.data || error);
-            throw new Error(`Failed to get rate for ${from}/${to}`);
+            throw new Error(error.response?.data?.message || 'Failed to get currency rates');
         }
     }
 }
