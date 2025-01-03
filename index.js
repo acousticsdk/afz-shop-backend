@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { corsConfig, handlePreflight } from './config/cors.js';
 import { steamRoutes } from './routes/steam.js';
+import { paymentRoutes } from './routes/payments.js';
 import { requestLogger, errorLogger } from './config/logger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import dotenv from 'dotenv';
@@ -35,7 +36,20 @@ app.use(handlePreflight);
 app.use(express.json());
 
 // Routes
-app.use('/steam', steamRoutes);
+app.use('/api/steam', steamRoutes);
+app.use('/api/payments', paymentRoutes);
+
+// Steam rates endpoint
+app.get('/steam/rates', (req, res) => {
+    res.json({
+        data: {
+            currencies: [
+                { code: 'KZT', rate: 4.75 },
+                { code: 'USD', rate: 0.0091 }
+            ]
+        }
+    });
+});
 
 // Error handling
 app.use(errorLogger);
