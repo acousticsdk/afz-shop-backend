@@ -26,9 +26,9 @@ class SteamCurrencyService {
             }
 
             // Get rates for required currency pairs
-            const [usdResponse, kztResponse] = await Promise.all([
+            const [usdRate, kztRate] = await Promise.all([
                 this.client.get('/currency/USD:RUB'),
-                this.client.get('/currency/RUB:KZT')
+                this.client.get('/currency/KZT:RUB')
             ]);
 
             // Transform response to match expected format
@@ -37,11 +37,11 @@ class SteamCurrencyService {
                     currencies: [
                         {
                             code: 'USD',
-                            rate: 1 / usdResponse.data.rate // Invert USD:RUB rate to get USD rate
+                            rate: usdRate.data.rate ? (1 / usdRate.data.rate) : null
                         },
                         {
                             code: 'KZT',
-                            rate: kztResponse.data.rate // Use RUB:KZT rate directly
+                            rate: kztRate.data.rate ? (1 / kztRate.data.rate) : null
                         }
                     ]
                 }
@@ -59,8 +59,8 @@ class SteamCurrencyService {
             return {
                 data: {
                     currencies: [
-                        { code: 'KZT', rate: 4.75 },
-                        { code: 'USD', rate: 0.0091 }
+                        { code: 'KZT', rate: 7.77 },
+                        { code: 'USD', rate: 0.99 }
                     ]
                 }
             };
