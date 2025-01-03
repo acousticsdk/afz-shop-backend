@@ -3,7 +3,7 @@ import morgan from 'morgan';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { corsConfig, handlePreflight } from './config/cors.js';
-import { paymentRoutes } from './routes/payments.js';
+import { steamRoutes } from './routes/steam.js';
 import { requestLogger, errorLogger } from './config/logger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import dotenv from 'dotenv';
@@ -35,19 +35,7 @@ app.use(handlePreflight);
 app.use(express.json());
 
 // Routes
-app.use('/api/payments', paymentRoutes);
-
-// Steam rates endpoint
-app.get('/steam/rates', (req, res) => {
-    res.json({
-        data: {
-            currencies: [
-                { code: 'KZT', rate: 4.75 },
-                { code: 'USD', rate: 0.0091 }
-            ]
-        }
-    });
-});
+app.use('/steam', steamRoutes);
 
 // Error handling
 app.use(errorLogger);
