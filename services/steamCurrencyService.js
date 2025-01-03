@@ -28,54 +28,53 @@ class SteamCurrencyService {
                 return this.cache.rates;
             }
 
-            // Log request details
-            console.log('Making API request to Steam Currency API');
+            // First get available currencies
+            console.log('Getting available currencies...');
+            const availableResponse = await this.client.get('/currency/available');
+            console.log('Available currencies response:', availableResponse.data);
 
-            // Get rates for required currency pairs
-            const response = await this.client.get('/currencies', {
-                params: {
-                    pairs: 'USD:RUB,KZT:RUB'
-                }
-            });
-
-            // Log raw response
-            console.log('API Response:', response.data);
-
-            // Transform response to match expected format
+            // Get rates for each currency pair
             const rates = {
                 data: {
                     currencies: []
                 }
             };
 
-            // Parse response and extract rates
-            if (response.data && Array.isArray(response.data.pairs)) {
-                response.data.pairs.forEach(pair => {
-                    const [currency] = pair.pair.split(':');
-                    rates.data.currencies.push({
-                        code: currency,
-                        rate: pair.rate ? (1 / pair.rate) : null
-                    });
-                });
+            // Get rates for KZT and USD
+            for (const currency of ['KZT', 'USD']) {
+                try {
+                    console.log(`Getting rate for ${currency}:RUB`);
+                    const response = await this.client.get(`/currency/${currency}:RUB`);
+                    console.log(`${currency} rate response:`, response.data);
+
+                    if (response.data && response.data.rate) {
+                        rates.data.currencies.push({
+                            code: currency,
+                            rate: 1 / response.data.rate // Invert rate to match our format
+                        });
+                    }
+                } catch (currencyError) {
+                    console.error(`Error getting ${currency} rate:`, currencyError.response?.data || currencyError);
+                }
             }
 
             // Log transformed rates
-            console.log('Transformed rates:', rates);
+            console.log('Final transformed rates:', rates);
 
-            // Update cache
-            this.cache.rates = rates;
-            this.cache.lastUpdate = Date.now();
+            // Update cache if we got at least one rate
+            if (rates.data.currencies.length > 0) {
+                this.cache.rates = rates;
+                this.cache.lastUpdate = Date.now();
+            }
 
             return rates;
         } catch (error) {
-            // Log detailed error information
             console.error('Steam currency rates error:', {
                 message: error.message,
                 response: error.response?.data,
                 status: error.response?.status,
                 config: {
                     url: error.config?.url,
-                    params: error.config?.params,
                     headers: {
                         ...error.config?.headers,
                         'api-token': '[REDACTED]'
@@ -87,8 +86,8 @@ class SteamCurrencyService {
             const fallbackRates = {
                 data: {
                     currencies: [
-                        { code: 'KZT', rate: 4.99 },
-                        { code: 'USD', rate: 0.99 }
+                        { code: 'KZT', rate: 4.75 },
+                        { code: 'USD', rate: 0.0091 }
                     ]
                 }
             };
