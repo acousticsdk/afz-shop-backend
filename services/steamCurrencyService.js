@@ -34,16 +34,16 @@ class SteamCurrencyService {
                 }
             };
 
-            // Get both currency pairs in parallel
+            // Get both currency pairs with proper parameters
             const [usdRate, kztRate] = await Promise.all([
-                this.getCurrencyRate('USD:RUB'),
-                this.getCurrencyRate('RUB:KZT')
+                this.getCurrencyRate('RUB:USD', 5),
+                this.getCurrencyRate('RUB:KZT', 5)
             ]);
 
             if (usdRate) {
                 rates.data.currencies.push({
                     code: 'USD',
-                    rate: formatCurrencyRate(1 / usdRate) // Convert USD:RUB to RUB:USD
+                    rate: formatCurrencyRate(usdRate)
                 });
             }
 
@@ -73,18 +73,16 @@ class SteamCurrencyService {
         }
     }
 
-    async getCurrencyRate(pair) {
+    async getCurrencyRate(pair, count = 5) {
         try {
             console.log(`Getting ${pair} rate`);
             const response = await this.client.get(`/currency/${pair}`, {
-                params: { count: 5 } // API requires minimum of 5
+                params: { count }
             });
             
-            console.log(`${pair} response:`, response.data);
-
-            if (Array.isArray(response.data) && response.data.length > 0) {
-                // Get the most recent rate
-                const latestRate = response.data
+            if (response.data?.data?.length > 0) {
+                // Sort by created_at in descending order and get the latest rate
+                const latestRate = response.data.data
                     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
                 
                 return latestRate?.close_price ? parseFloat(latestRate.close_price) : null;
