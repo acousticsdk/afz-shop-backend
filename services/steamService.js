@@ -4,6 +4,7 @@ import { generateSignature } from '../utils/signatureGenerator.js';
 
 class SteamService {
     constructor() {
+        // Antilopay API client
         this.antilopayClient = axios.create({
             baseURL: config.antilopay.baseUrl,
             headers: {
@@ -11,10 +12,12 @@ class SteamService {
             }
         });
 
+        // Steam Currency API client
         this.steamCurrencyClient = axios.create({
-            baseURL: config.steamCurrency.baseUrl,
+            baseURL: 'https://api.steam-currency.ru',
             headers: {
-                'Authorization': `Bearer ${config.steamCurrency.token}`
+                'Authorization': `Bearer ${config.steamCurrency.token}`,
+                'Accept': 'application/json'
             }
         });
     }
@@ -26,7 +29,6 @@ class SteamService {
                 steam_account: steamAccount
             };
 
-            // Generate SHA256WithRSA signature
             const signature = generateSignature(data, config.antilopay.privateKey);
 
             const response = await this.antilopayClient.post('/steam/account/check', data, {
@@ -35,12 +37,12 @@ class SteamService {
                 }
             });
 
-            return response.data;
+            return {
+                can_topup: response.data.can_topup === true,
+                error: response.data.error
+            };
         } catch (error) {
-            console.error('Steam account check error:', {
-                error: error.response?.data || error.message,
-                status: error.response?.status
-            });
+            console.error('Steam account check error:', error.response?.data || error);
             throw new Error(error.response?.data?.error || 'Failed to check Steam account');
         }
     }
@@ -52,13 +54,12 @@ class SteamService {
                 steam_account: params.steam_account,
                 amount: params.amount,
                 topup_amount: params.topup_amount,
-                currency: params.currency,
+                currency: params.currency || 'RUB',
                 order_id: params.order_id,
                 description: params.description,
                 customer: params.customer
             };
 
-            // Generate SHA256WithRSA signature
             const signature = generateSignature(data, config.antilopay.privateKey);
 
             const response = await this.antilopayClient.post('/steam/topup/create', data, {
@@ -67,25 +68,34 @@ class SteamService {
                 }
             });
 
-            return response.data;
+            return {
+                payment_url: response.data.payment_url,
+                order_id: response.data.order_id
+            };
         } catch (error) {
-            console.error('Steam topup creation error:', {
-                error: error.response?.data || error.message,
-                status: error.response?.status
-            });
+            console.error('Steam topup creation error:', error.response?.data || error);
             throw new Error(error.response?.data?.error || 'Failed to create Steam topup');
         }
     }
 
     async getRates() {
         try {
-            const response = await this.steamCurrencyClient.get('/rates');
-            return response.data;
+            // Steam Currency API returns rates in format described in their docs
+            const response = await this.steamCurrencyClient.get('/v1/rates/all');
+            
+            // Transform response to match expected format
+            const rates = {
+                data: {
+                    currencies: Object.entries(response.data.rates).map(([code, rate]) => ({
+                        code,
+                        rate: parseFloat(rate)
+                    }))
+                }
+            };
+
+            return rates;
         } catch (error) {
-            console.error('Steam currency rates error:', {
-                error: error.response?.data || error.message,
-                status: error.response?.status
-            });
+            console.error('Steam currency rates error:', error.response?.data || error);
             throw new Error('Failed to get currency rates');
         }
     }

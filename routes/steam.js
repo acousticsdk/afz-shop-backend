@@ -21,11 +21,22 @@ router.post('/account/check', async (req, res, next) => {
 // Create Steam topup
 router.post('/topup/create', async (req, res, next) => {
     try {
-        const { steam_account, amount, topup_amount, currency = 'RUB', order_id, description, customer } = req.body;
+        const { 
+            steam_account, 
+            amount, 
+            topup_amount, 
+            currency = 'RUB', 
+            order_id, 
+            description, 
+            customer 
+        } = req.body;
 
         // Validate required fields
         if (!steam_account || !amount || !topup_amount || !order_id) {
-            return res.status(400).json({ error: 'Missing required fields' });
+            return res.status(400).json({ 
+                error: 'Missing required fields',
+                required: ['steam_account', 'amount', 'topup_amount', 'order_id']
+            });
         }
 
         const result = await steamService.createTopup({
