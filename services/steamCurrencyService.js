@@ -26,36 +26,26 @@ class SteamCurrencyService {
             }
 
             // Get rates for required currency pairs
-            const pairs = ['USD:RUB', 'RUB:KZT'];
-            const requests = pairs.map(pair => this.client.get(`/currency/${pair}`));
-            const responses = await Promise.all(requests);
-            
+            const [usdResponse, kztResponse] = await Promise.all([
+                this.client.get('/currency/USD:RUB'),
+                this.client.get('/currency/RUB:KZT')
+            ]);
+
             // Transform response to match expected format
             const rates = {
                 data: {
-                    currencies: []
+                    currencies: [
+                        {
+                            code: 'USD',
+                            rate: 1 / usdResponse.data.rate // Invert USD:RUB rate to get USD rate
+                        },
+                        {
+                            code: 'KZT',
+                            rate: kztResponse.data.rate // Use RUB:KZT rate directly
+                        }
+                    ]
                 }
             };
-
-            // Process each currency pair
-            responses.forEach(response => {
-                const [from, to] = response.data.pair.split(':');
-                const rate = response.data.rate;
-
-                if (from === 'USD' && to === 'RUB') {
-                    // USD:RUB rate needs to be inverted for USD rate
-                    rates.data.currencies.push({
-                        code: 'USD',
-                        rate: 1/rate
-                    });
-                } else if (from === 'RUB' && to === 'KZT') {
-                    // RUB:KZT rate can be used directly
-                    rates.data.currencies.push({
-                        code: 'KZT',
-                        rate: rate
-                    });
-                }
-            });
 
             // Update cache
             this.cache.rates = rates;
@@ -64,7 +54,16 @@ class SteamCurrencyService {
             return rates;
         } catch (error) {
             console.error('Steam currency rates error:', error.response?.data || error);
-            throw new Error(error.response?.data?.message || 'Failed to get currency rates');
+            
+            // Return fallback rates if API fails
+            return {
+                data: {
+                    currencies: [
+                        { code: 'KZT', rate: 4.75 },
+                        { code: 'USD', rate: 0.0091 }
+                    ]
+                }
+            };
         }
     }
 }
