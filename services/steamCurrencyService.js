@@ -15,7 +15,7 @@ class SteamCurrencyService {
         this.cache = {
             rates: null,
             lastUpdate: 0,
-            CACHE_DURATION: 5 * 60 * 1000 // 5 minutes
+            CACHE_DURATION: 60 * 60 * 1000 // 5 minutes
         };
     }
 
