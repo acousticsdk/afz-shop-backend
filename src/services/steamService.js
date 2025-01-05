@@ -8,7 +8,7 @@ export const checkSteamAccount = async (steamAccount) => {
     };
 
     const response = await makeAntilopaRequest('/steam/account/check', data);
-    return { code: response.status };
+    return { code: response };
   } catch (error) {
     console.error('Steam account check error:', error);
     throw error;
